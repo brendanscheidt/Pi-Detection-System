@@ -4,6 +4,7 @@ from gpiozero.exc import PWMSoftwareFallback
 from gpiozero import DistanceSensor
 from sms_sender import SMSSender
 import time
+import threading
 
 class DetectionSystem():
     def __init__(self, echo_pin=24, trigger_pin=23, name="Default"):
@@ -14,11 +15,22 @@ class DetectionSystem():
         self.sensor.when_in_range = self._trigger_detection
         self.sensor.when_out_of_range = self._trigger_clear
         self.sms_sender = SMSSender(name)
+        self.last_alert = 0
+        self.cooldown = 60
 
     def _trigger_detection(self):
+        now = time.time()
+        if now - self.last_alert < self.cooldown:
+            return
+        
         print("OPEN")
-        self.sms_sender.send_message("Intrusion Detected!")
-        time.sleep(15)
+        self.last_alert = now
+
+        threading.Thread(
+            target=self.sms_sender.send_message,
+            args=("Intrusion Detected!",),
+            daemon=True
+        ).start()
 
     def _trigger_clear(self):
       print("CLOSE")
