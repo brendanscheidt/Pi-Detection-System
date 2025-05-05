@@ -6,16 +6,20 @@ from sms_config import SENDER_EMAIL, GATEWAY_ADDRESS, APP_KEY
 class SMSSender():
     def __init__(self, name="Default"):
         self.name = name
-        self.msg = EmailMessage()
-        self.msg['From'] = SENDER_EMAIL
-        self.msg['To'] = GATEWAY_ADDRESS
-        self.msg['Subject'] = self.name
-        self.server = smtplib.SMTP('smtp.gmail.com', 587)
 
     def send_message(self, message):
-        date = datetime.datetime.now().strftime("%c")
-        self.msg.set_content("\n" + date + "\n" + message)
-        self.server.starttls()
-        self.server.login(SENDER_EMAIL, APP_KEY)
-        self.server.send_message(self.msg)
-        self.server.quit()
+        msg = EmailMessage()
+        msg['From'] = SENDER_EMAIL
+        msg['To'] = GATEWAY_ADDRESS
+        msg['Subject'] = self.name
+        now = datetime.datetime.now().strftime("%c")
+        msg.set_content(f"{now}\n\n{message}")
+
+        try:
+            with smtplib.SMTP('smtp.gmail.com', 587) as server:
+                server.starttls()
+                server.login(SENDER_EMAIL, APP_KEY)
+                server.send_message(msg)
+            print("SMS sent")
+        except Exception as e:
+            print(f"Failed to send SMS: {e}")
